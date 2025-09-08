@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Registro de s</title>
-    <!-- Adiciona o manifesto do aplicativo para torná-lo instalável -->
+    <title>Registro de Gastos</title>
     <link rel="manifest" href="manifest.json">
     <style>
         :root {
@@ -147,16 +146,19 @@
 
         #exportar-csv {
             background-color: #34a853;
-            margin-top: 10px;
         }
-
+        #limpar-gastos {
+            background-color: #e74c3c;
+        }
         #exportar-csv:hover {
             background-color: #2b8440;
+        }
+        #limpar-gastos:hover {
+            background-color: #c0392b;
         }
 
         #modo-escuro-btn {
             background-color: #2c3e50;
-            margin-top: 10px;
         }
 
         #modo-escuro-btn:hover {
@@ -214,18 +216,22 @@
         }
 
         #ver-mais-btn {
-            display: none;
             margin-top: 15px;
             background-color: #555;
+            display: none; /* Inicia como escondido */
         }
-
         #ver-mais-btn:hover {
             background-color: #333;
         }
-
+        
         .flex-row {
             display: flex;
             gap: 10px;
+            flex-wrap: wrap;
+        }
+        .flex-row button {
+            flex: 1;
+            margin-top: 10px;
         }
     </style>
 </head>
@@ -272,16 +278,19 @@
     </div>
 
     <div class="container">
-        <button id="exportar-csv" class="button-export">Exportar Gastos (.csv)</button>
-        <button id="modo-escuro-btn">Modo Escuro</button>
+        <div class="flex-row">
+            <button id="exportar-csv" class="button-export">Exportar Gastos (.csv)</button>
+            <button id="limpar-gastos">Limpar Gastos</button>
+            <button id="modo-escuro-btn">Modo Escuro</button>
+        </div>
         <div class="message">
-            <p>NÃO SAIR ANTES DE EXPORTAR!!!</p>
+            <p>Seus gastos são salvos no seu navegador e funcionam offline. Lembre-se de exportar ou fazer backup dos dados, pois a limpeza apaga o histórico permanentemente.</p>
         </div>
         <div id="gastos-lista">
             <h2>Últimos Gastos</h2>
             <ul id="lista-gastos"></ul>
             <div id="total-valor"></div>
-            <button id="ver-mais-btn" style="display: none;">Ver Mais</button>
+            <button id="ver-mais-btn">Ver Mais</button>
         </div>
     </div>
 
@@ -301,6 +310,7 @@
         const listaGastos = document.getElementById('lista-gastos');
         const totalValorDiv = document.getElementById('total-valor');
         const exportarCsvBtn = document.getElementById('exportar-csv');
+        const limparGastosBtn = document.getElementById('limpar-gastos');
         const modoEscuroBtn = document.getElementById('modo-escuro-btn');
         const verMaisBtn = document.getElementById('ver-mais-btn');
         const formaPagamentoGroup = document.getElementById('forma-pagamento-group');
@@ -326,31 +336,31 @@
             totalValorDiv.textContent = `Total: R$ ${total.toFixed(2).replace('.', ',')}`;
         }
 
-        function displayGastos(startIndex = 0) {
-            const gastos = getGastos();
-            const numTotalGastos = gastos.length;
+        function displayGastos() {
+            const gastos = getGastos().reverse(); // Exibe os gastos do mais recente para o mais antigo
+            listaGastos.innerHTML = ''; // Limpa a lista antes de exibir
 
-            if (startIndex === 0) {
-                listaGastos.innerHTML = '';
+            const gastosParaExibir = gastos.slice(0, gastosExibidos);
+            if (gastosParaExibir.length === 0) {
+                listaGastos.innerHTML = '<p style="text-align: center;">Nenhum gasto registrado ainda.</p>';
+            } else {
+                gastosParaExibir.forEach(gasto => {
+                    const li = document.createElement('li');
+                    li.innerHTML = `
+                        <strong>Data:</strong> ${new Date(gasto.timestamp).toLocaleDateString('pt-BR')}<br>
+                        <strong>Valor:</strong> R$ ${gasto.valor.toFixed(2).replace('.', ',')}<br>
+                        <strong>Forma de Pagamento:</strong> ${gasto.tipoPagamento}<br>
+                        <strong>Tipo de Pagamento:</strong> ${gasto.categoria}<br>
+                        <strong>Descrição:</strong> ${gasto.descricao}
+                    `;
+                    listaGastos.appendChild(li);
+                });
             }
 
-            const gastosParaExibir = gastos.slice(gastosExibidos * -1).reverse().slice(startIndex, startIndex + 5);
+            calcularTotal(getGastos());
 
-            gastosParaExibir.forEach(gasto => {
-                const li = document.createElement('li');
-                li.innerHTML = `
-                    <strong>Data:</strong> ${gasto.data}<br>
-                    <strong>Valor:</strong> R$ ${gasto.valor.toFixed(2).replace('.', ',')}<br>
-                    <strong>Forma de Pagamento:</strong> ${gasto.tipoPagamento}<br>
-                    <strong>Tipo de Pagamento:</strong> ${gasto.categoria}<br>
-                    <strong>Descrição:</strong> ${gasto.descricao}
-                `;
-                listaGastos.appendChild(li);
-            });
-
-            calcularTotal(gastos);
-
-            if (numTotalGastos > gastosExibidos + startIndex) {
+            // Lógica para o botão "Ver Mais"
+            if (gastos.length > gastosExibidos) {
                 verMaisBtn.style.display = 'block';
             } else {
                 verMaisBtn.style.display = 'none';
@@ -367,8 +377,6 @@
         // Event Listeners
         form.addEventListener('submit', (e) => {
             e.preventDefault();
-
-            // Valida se os botões de opção foram selecionados
             if (!tipoPagamentoInput.value || !categoriaInput.value) {
                 alert('Por favor, selecione as opções de pagamento.');
                 return;
@@ -418,8 +426,6 @@
                 alert('Nenhum gasto para exportar.');
                 return;
             }
-
-            // Lógica para o nome do arquivo
             const dataAtual = new Date();
             const dia = String(dataAtual.getDate()).padStart(2, '0');
             const mes = String(dataAtual.getMonth() + 1).padStart(2, '0');
@@ -429,16 +435,12 @@
             const totalValor = gastos.reduce((sum, gasto) => sum + gasto.valor, 0).toFixed(2);
             const nomeArquivo = `GASTOS_${dataFormatada}_R$${totalValor.replace('.', ',')}.csv`;
 
-            // Cabeçalho com hora
             const header = ['Data', 'Hora', 'Valor', 'Forma de Pagamento', 'Tipo de Pagamento', 'Descricao'];
             const csv = [
                 header.join(','),
                 ...gastos.map(gasto => {
-                    // Formatar data para DD-MM-AAAA
                     const [ano, mes, dia] = gasto.data.split('-');
                     const dataFormatada = `${dia}-${mes}-${ano}`;
-
-                    // Extrair hora do timestamp
                     const hora = new Date(gasto.timestamp).toLocaleTimeString('pt-BR', {
                         hour: '2-digit',
                         minute: '2-digit',
@@ -466,13 +468,22 @@
             link.click();
             document.body.removeChild(link);
         });
-
-        modoEscuroBtn.addEventListener('click', toggleModoEscuro);
+        
+        limparGastosBtn.addEventListener('click', () => {
+            const confirmacao = confirm('Tem certeza que deseja apagar todos os gastos? Esta ação é irreversível.');
+            if (confirmacao) {
+                localStorage.removeItem('gastos');
+                gastosExibidos = 5; // Reseta a exibição para o padrão
+                displayGastos(); // Atualiza a lista na tela
+            }
+        });
 
         verMaisBtn.addEventListener('click', () => {
             gastosExibidos += 5;
-            displayGastos(gastosExibidos - 5);
+            displayGastos();
         });
+
+        modoEscuroBtn.addEventListener('click', toggleModoEscuro);
 
         // Inicialização
         window.addEventListener('load', () => {
