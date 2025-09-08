@@ -1,5 +1,5 @@
 {
-  "name": "Registro de Gastos",
+  "name": "Gastos",
   "short_name": "Gastos",
   "description": "Um aplicativo simples para registrar seus gastos.",
   "start_url": "./",
