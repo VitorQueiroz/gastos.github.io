@@ -2,7 +2,7 @@ const CACHE_NAME = 'gastos-app-v2';
 const urlsToCache = [
     'index.html',
 'manifest.json',
-'icon.png'
+'icone.png'
 ];
 
 // Instala o Service Worker e armazena os arquivos em cache
