@@ -429,16 +429,31 @@
             const totalValor = gastos.reduce((sum, gasto) => sum + gasto.valor, 0).toFixed(2);
             const nomeArquivo = `GASTOS_${dataFormatada}_R$${totalValor.replace('.', ',')}.csv`;
 
-            const header = ['Data', 'Valor', 'Forma de Pagamento', 'Tipo de Pagamento', 'Descricao'];
+            // Cabeçalho com hora
+            const header = ['Data', 'Hora', 'Valor', 'Forma de Pagamento', 'Tipo de Pagamento', 'Descricao'];
             const csv = [
                 header.join(','),
-                ...gastos.map(gasto => [
-                    gasto.data,
-                    gasto.valor.toFixed(2).replace('.', ','),
-                    gasto.tipoPagamento,
-                    gasto.categoria,
-                    `"${gasto.descricao.replace(/"/g, '""')}"`
-                ].join(','))
+                ...gastos.map(gasto => {
+                    // Formatar data para DD-MM-AAAA
+                    const [ano, mes, dia] = gasto.data.split('-');
+                    const dataFormatada = `${dia}-${mes}-${ano}`;
+
+                    // Extrair hora do timestamp
+                    const hora = new Date(gasto.timestamp).toLocaleTimeString('pt-BR', {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        second: '2-digit'
+                    });
+
+                    return [
+                        dataFormatada,
+                        hora,
+                        gasto.valor.toFixed(2).replace('.', ','),
+                        gasto.tipoPagamento,
+                        gasto.categoria,
+                        `"${gasto.descricao.replace(/"/g, '""')}"`
+                    ].join(',');
+                })
             ].join('\n');
 
             const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
