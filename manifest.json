@@ -1,0 +1,21 @@
+{
+  "name": "Registro de Gastos",
+  "short_name": "Gastos",
+  "description": "Um aplicativo simples para registrar seus gastos.",
+  "start_url": "https://vitorqueiroz.github.io/gastos.github.io/gastos.html",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#9370DB",
+  "icons": [
+    {
+      "src": "icone.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icone512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
