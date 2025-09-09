@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+   <link rel="manifest" href="manifest.json">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diário de Gastos</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-light: #F0F0F0;
+            --text-light: #1A1A1A;
+            --primary-light: #FF00FF; /* Magenta */
+            --secondary-light: #FFFFFF;
+        }
+        .dark {
+            --bg-light: #1A1A1A;
+            --text-light: #F0F0F0;
+            --primary-light: #FF00FF;
+            --secondary-light: #000000;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-light);
+            color: var(--text-light);
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        .container {
+            max-width: 400px;
+            margin: auto;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding: 1rem;
+        }
+        .text-magenta {
+            color: var(--primary-light);
+        }
+        .bg-magenta {
+            background-color: var(--primary-light);
+        }
+        .bg-secondary {
+            background-color: var(--secondary-light);
+        }
+        .border-magenta {
+            border-color: var(--primary-light);
+        }
+        .text-secondary {
+            color: var(--secondary-light);
+        }
+    </style>
+</head>
+<body class="dark">
+    <div class="container rounded-2xl shadow-lg bg-secondary">
+        <!-- Header -->
+        <header class="flex justify-between items-center py-4 px-2">
+            <h1 class="text-2xl font-bold text-magenta">Diário de Gastos</h1>
+            <button id="theme-toggle" class="p-2 rounded-full border-2 border-magenta">
+                <svg id="moon-icon" class="w-6 h-6 text-magenta hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
+                </svg>
+                <svg id="sun-icon" class="w-6 h-6 text-magenta" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>
+                </svg>
+            </button>
+        </header>
+
+        <!-- Navigation -->
+        <nav class="flex justify-around my-4">
+            <button id="btn-add" class="flex-1 p-3 text-sm font-semibold text-center border-b-2 border-magenta text-magenta">
+                Registro de Dados
+            </button>
+            <button id="btn-view" class="flex-1 p-3 text-sm font-semibold text-center text-gray-500 hover:text-magenta transition-colors duration-300">
+                Meus Gastos
+            </button>
+        </nav>
+
+        <!-- Main content areas -->
+        <main class="flex-1">
+            <!-- Register Section (Registro de Dados) -->
+            <section id="register-section" class="flex flex-col gap-4">
+                <form id="expense-form" class="flex flex-col gap-4">
+                    <!-- Data -->
+                    <div>
+                        <label for="date-input" class="block mb-1 text-sm font-medium">Data</label>
+                        <input type="date" id="date-input" class="w-full p-2 border-2 border-gray-300 rounded-lg focus:ring-magenta focus:border-magenta text-sm bg-secondary transition-colors duration-300">
+                    </div>
+
+                    <!-- Valor -->
+                    <div>
+                        <label for="value-input" class="block mb-1 text-sm font-medium">Valor</label>
+                        <div class="relative">
+                            <input type="text" id="value-input" placeholder="R$ 0,00" class="w-full p-2 border-2 border-gray-300 rounded-lg focus:ring-magenta focus:border-magenta text-sm bg-secondary transition-colors duration-300">
+                        </div>
+                    </div>
+
+                    <!-- Forma de Pagamento -->
+                    <div>
+                        <label for="payment-method" class="block mb-1 text-sm font-medium">Forma de Pagamento</label>
+                        <select id="payment-method" class="w-full p-2 border-2 border-gray-300 rounded-lg focus:ring-magenta focus:border-magenta text-sm bg-secondary transition-colors duration-300">
+                            <option value="Credito">Crédito</option>
+                            <option value="Debito" selected>Débito</option>
+                            <option value="Dinheiro">Dinheiro</option>
+                        </select>
+                    </div>
+
+                    <!-- Categoria -->
+                    <div>
+                        <label for="category" class="block mb-1 text-sm font-medium">Categoria</label>
+                        <select id="category" class="w-full p-2 border-2 border-gray-300 rounded-lg focus:ring-magenta focus:border-magenta text-sm bg-secondary transition-colors duration-300">
+                            <option value="Produto">Produto</option>
+                            <option value="Servico">Serviço</option>
+                            <option value="Transferencia">Transferência</option>
+                            <option value="Divida">Dívida</option>
+                        </select>
+                    </div>
+
+                    <!-- Descrição -->
+                    <div>
+                        <label for="description-input" class="block mb-1 text-sm font-medium">Descrição Detalhada</label>
+                        <textarea id="description-input" rows="3" class="w-full p-2 border-2 border-gray-300 rounded-lg focus:ring-magenta focus:border-magenta text-sm bg-secondary transition-colors duration-300"></textarea>
+                    </div>
+
+                    <button type="submit" class="w-full py-3 bg-magenta text-white font-semibold rounded-lg shadow-md transition-transform duration-300 transform hover:scale-105">
+                        Registrar Gasto
+                    </button>
+                </form>
+            </section>
+
+            <!-- View Section (Meus Gastos) -->
+            <section id="view-section" class="flex flex-col gap-4 hidden">
+                <!-- Filter buttons -->
+                <div class="flex justify-around bg-secondary p-1 rounded-full shadow">
+                    <button data-filter="Debito" class="flex-1 py-2 px-4 rounded-full text-sm font-semibold transition-colors duration-300 bg-magenta text-white">Débito</button>
+                    <button data-filter="Credito" class="flex-1 py-2 px-4 rounded-full text-sm font-semibold text-gray-500 hover:text-magenta transition-colors duration-300">Crédito</button>
+                    <button data-filter="Dinheiro" class="flex-1 py-2 px-4 rounded-full text-sm font-semibold text-gray-500 hover:text-magenta transition-colors duration-300">Dinheiro</button>
+                </div>
+
+                <!-- Total -->
+                <div class="flex flex-col items-center bg-gray-200 dark:bg-gray-800 p-4 rounded-lg shadow-inner">
+                    <p class="text-sm font-medium">Total da Lista:</p>
+                    <p id="total-display" class="text-3xl font-bold text-magenta mt-1">R$ 0,00</p>
+                </div>
+
+                <!-- Expenses list -->
+                <ul id="expense-list" class="flex flex-col gap-3 flex-1 overflow-y-auto">
+                    <!-- Dynamic list items will be inserted here -->
+                </ul>
+
+                <!-- Action buttons -->
+                <div class="flex gap-4 mt-4">
+                    <button id="export-csv" class="flex-1 py-3 bg-gray-300 dark:bg-gray-700 text-gray-800 dark:text-gray-200 font-semibold rounded-lg shadow-md transition-transform duration-300 transform hover:scale-105">
+                        Exportar para CSV
+                    </button>
+                    <button id="clear-entries" class="flex-1 py-3 bg-gray-300 dark:bg-gray-700 text-gray-800 dark:text-gray-200 font-semibold rounded-lg shadow-md transition-transform duration-300 transform hover:scale-105">
+                        Limpar Entradas
+                    </button>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Custom Modal -->
+    <div id="custom-modal" class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center hidden">
+        <div class="bg-secondary p-6 rounded-lg shadow-lg max-w-sm w-full mx-4 flex flex-col items-center">
+            <p id="modal-message" class="text-lg text-center mb-4"></p>
+            <div id="modal-buttons" class="flex gap-4">
+                <button id="modal-ok-btn" class="py-2 px-4 bg-magenta text-white font-semibold rounded-lg">OK</button>
+                <button id="modal-cancel-btn" class="py-2 px-4 bg-gray-300 dark:bg-gray-700 text-gray-800 dark:text-gray-200 font-semibold rounded-lg">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            // --- Variáveis globais e elementos do DOM ---
+            const themeToggleBtn = document.getElementById('theme-toggle');
+            const sunIcon = document.getElementById('sun-icon');
+            const moonIcon = document.getElementById('moon-icon');
+            const body = document.body;
+
+            const btnAdd = document.getElementById('btn-add');
+            const btnView = document.getElementById('btn-view');
+            const registerSection = document.getElementById('register-section');
+            const viewSection = document.getElementById('view-section');
+
+            const expenseForm = document.getElementById('expense-form');
+            const dateInput = document.getElementById('date-input');
+            const valueInput = document.getElementById('value-input');
+            const paymentMethodSelect = document.getElementById('payment-method');
+            const categorySelect = document.getElementById('category');
+            const descriptionInput = document.getElementById('description-input');
+
+            const filterButtons = document.querySelectorAll('#view-section button[data-filter]');
+            const expenseList = document.getElementById('expense-list');
+            const totalDisplay = document.getElementById('total-display');
+            const exportCsvBtn = document.getElementById('export-csv');
+            const clearEntriesBtn = document.getElementById('clear-entries');
+            
+            // Modal elements
+            const customModal = document.getElementById('custom-modal');
+            const modalMessage = document.getElementById('modal-message');
+            const modalOkBtn = document.getElementById('modal-ok-btn');
+            const modalCancelBtn = document.getElementById('modal-cancel-btn');
+
+            let db;
+            let currentFilter = 'Debito';
+
+            // --- Lógica de Modo Escuro/Claro ---
+            const setTheme = (theme) => {
+                if (theme === 'dark') {
+                    body.classList.add('dark');
+                    sunIcon.classList.add('hidden');
+                    moonIcon.classList.remove('hidden');
+                } else {
+                    body.classList.remove('dark');
+                    moonIcon.classList.add('hidden');
+                    sunIcon.classList.remove('hidden');
+                }
+                localStorage.setItem('theme', theme);
+            };
+
+            themeToggleBtn.addEventListener('click', () => {
+                const currentTheme = body.classList.contains('dark') ? 'light' : 'dark';
+                setTheme(currentTheme);
+            });
+
+            const initialTheme = localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+            setTheme(initialTheme);
+
+            // --- Lógica de navegação entre seções ---
+            const showSection = async (sectionId) => {
+                registerSection.classList.add('hidden');
+                viewSection.classList.add('hidden');
+                btnAdd.classList.remove('border-magenta', 'text-magenta');
+                btnAdd.classList.add('text-gray-500');
+                btnView.classList.remove('border-magenta', 'text-magenta');
+                btnView.classList.add('text-gray-500');
+
+                if (sectionId === 'register-section') {
+                    registerSection.classList.remove('hidden');
+                    btnAdd.classList.add('border-b-2', 'border-magenta', 'text-magenta');
+                } else {
+                    viewSection.classList.remove('hidden');
+                    btnView.classList.add('border-b-2', 'border-magenta', 'text-magenta');
+                    await renderExpenses(currentFilter);
+                }
+            };
+            
+            btnAdd.addEventListener('click', () => showSection('register-section'));
+            btnView.addEventListener('click', () => showSection('view-section'));
+
+            // --- IndexedDB: Inicialização e Gerenciamento do Banco de Dados ---
+            const openDatabase = () => {
+                return new Promise((resolve, reject) => {
+                    const request = indexedDB.open('financeDb', 1);
+
+                    request.onupgradeneeded = (event) => {
+                        db = event.target.result;
+                        const objectStore = db.createObjectStore('expenses', { keyPath: 'id', autoIncrement: true });
+                        objectStore.createIndex('paymentMethod', 'paymentMethod', { unique: false });
+                    };
+
+                    request.onsuccess = (event) => {
+                        db = event.target.result;
+                        resolve(db);
+                    };
+
+                    request.onerror = (event) => {
+                        console.error('Erro ao abrir o banco de dados:', event.target.errorCode);
+                        reject(event.target.errorCode);
+                    };
+                });
+            };
+
+            await openDatabase();
+
+            // --- Funções do Modal Personalizado ---
+            const showModal = (message, isConfirm = false) => {
+                return new Promise(resolve => {
+                    modalMessage.textContent = message;
+                    if (isConfirm) {
+                        modalOkBtn.textContent = 'Sim';
+                        modalCancelBtn.classList.remove('hidden');
+                    } else {
+                        modalOkBtn.textContent = 'OK';
+                        modalCancelBtn.classList.add('hidden');
+                    }
+                    customModal.classList.remove('hidden');
+
+                    modalOkBtn.onclick = () => {
+                        customModal.classList.add('hidden');
+                        resolve(true);
+                    };
+                    modalCancelBtn.onclick = () => {
+                        customModal.classList.add('hidden');
+                        resolve(false);
+                    };
+                });
+            };
+
+            // --- Função de formatação de moeda brasileira (R$ 0.000,00) ---
+            const formatCurrency = (value) => {
+                if (typeof value === 'string') {
+                    value = value.replace(/\D/g, '');
+                }
+                let num = Number(value) / 100;
+                
+                const formatter = new Intl.NumberFormat('pt-BR', {
+                    style: 'currency',
+                    currency: 'BRL'
+                });
+                
+                return formatter.format(num);
+            };
+
+            // --- Funções de interação com o IndexedDB ---
+            const addExpenseToDb = (expense) => {
+                return new Promise((resolve, reject) => {
+                    const transaction = db.transaction(['expenses'], 'readwrite');
+                    const objectStore = transaction.objectStore('expenses');
+                    const request = objectStore.add(expense);
+
+                    request.onsuccess = () => resolve();
+                    request.onerror = (e) => reject(e.target.error);
+                });
+            };
+
+            const getExpensesFromDb = (filter) => {
+                return new Promise((resolve, reject) => {
+                    const transaction = db.transaction(['expenses'], 'readonly');
+                    const objectStore = transaction.objectStore('expenses');
+                    
+                    const index = objectStore.index('paymentMethod');
+                    const request = index.getAll(filter);
+                    
+                    request.onsuccess = () => resolve(request.result);
+                    request.onerror = (e) => reject(e.target.error);
+                });
+            };
+            
+            const clearExpensesInDb = (filter) => {
+                return new Promise((resolve, reject) => {
+                    const transaction = db.transaction(['expenses'], 'readwrite');
+                    const objectStore = transaction.objectStore('expenses');
+                    const index = objectStore.index('paymentMethod');
+                    const request = index.openCursor(IDBKeyRange.only(filter));
+
+                    request.onsuccess = (event) => {
+                        const cursor = event.target.result;
+                        if (cursor) {
+                            objectStore.delete(cursor.primaryKey);
+                            cursor.continue();
+                        } else {
+                            resolve();
+                        }
+                    };
+                    request.onerror = (e) => reject(e.target.error);
+                });
+            };
+
+            // --- Funcionalidade 1: Registro de Gastos ---
+            const today = new Date();
+            const year = today.getFullYear();
+            const month = String(today.getMonth() + 1).padStart(2, '0');
+            const day = String(today.getDate()).padStart(2, '0');
+            dateInput.value = `${year}-${month}-${day}`;
+
+            valueInput.addEventListener('input', (e) => {
+                let value = e.target.value.replace(/\D/g, '');
+                e.target.value = formatCurrency(value);
+            });
+
+            expenseForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+
+                const rawValue = valueInput.value.replace(/\D/g, '');
+                if (!rawValue) return;
+
+                const newExpense = {
+                    date: dateInput.value,
+                    value: parseFloat(rawValue) / 100, // Salva o valor como número
+                    paymentMethod: paymentMethodSelect.value,
+                    category: categorySelect.value,
+                    description: descriptionInput.value
+                };
+
+                await addExpenseToDb(newExpense);
+
+                expenseForm.reset();
+                dateInput.value = `${year}-${month}-${day}`;
+                valueInput.value = '';
+
+                await renderExpenses(currentFilter);
+            });
+
+            // --- Funcionalidade 2: Meus Gastos ---
+            const renderExpenses = async (filter) => {
+                expenseList.innerHTML = '';
+                let total = 0;
+
+                const expenses = await getExpensesFromDb(filter);
+                
+                if (expenses.length === 0) {
+                    expenseList.innerHTML = `<li class="text-center text-gray-400 mt-8">Nenhum gasto encontrado para esta categoria.</li>`;
+                }
+
+                expenses.forEach(expense => {
+                    const numericValue = expense.value;
+                    total += numericValue;
+
+                    const listItem = document.createElement('li');
+                    listItem.classList.add('bg-gray-100', 'dark:bg-gray-800', 'p-4', 'rounded-lg', 'shadow', 'flex', 'flex-col', 'gap-1');
+                    listItem.innerHTML = `
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm font-semibold">${expense.date.split('-').reverse().join('/')}</span>
+                            <span class="text-lg font-bold text-magenta">${formatCurrency(expense.value * 100)}</span>
+                        </div>
+                        <div class="flex justify-between items-center text-sm text-gray-500 dark:text-gray-400">
+                            <span>Categoria: ${expense.category}</span>
+                            <span>Descrição: ${expense.description}</span>
+                        </div>
+                    `;
+                    expenseList.appendChild(listItem);
+                });
+
+                totalDisplay.textContent = formatCurrency(total * 100);
+                currentFilter = filter;
+                
+                filterButtons.forEach(btn => {
+                    if (btn.dataset.filter === filter) {
+                        btn.classList.add('bg-magenta', 'text-white');
+                        btn.classList.remove('text-gray-500');
+                    } else {
+                        btn.classList.remove('bg-magenta', 'text-white');
+                        btn.classList.add('text-gray-500');
+                    }
+                });
+            };
+
+            filterButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    renderExpenses(button.dataset.filter);
+                });
+            });
+
+            await renderExpenses('Debito');
+
+            exportCsvBtn.addEventListener('click', async () => {
+                const expensesToExport = await getExpensesFromDb(currentFilter);
+                if (expensesToExport.length === 0) {
+                    await showModal('Não há dados para exportar.');
+                    return;
+                }
+                
+                let csvContent = "Data,Valor,Forma Pgto,Categoria,Descricao\n";
+                expensesToExport.forEach(expense => {
+                    const formattedValue = new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2, useGrouping: false }).format(expense.value).replace('.', ',');
+                    const row = [
+                        expense.date.split('-').reverse().join('/'),
+                        formattedValue,
+                        expense.paymentMethod,
+                        expense.category,
+                        `"${expense.description.replace(/"/g, '""')}"`
+                    ].join(','); 
+                    csvContent += row + "\n";
+                });
+
+                const blob = new Blob([`\ufeff${csvContent}`], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement('a');
+                if (link.download !== undefined) {
+                    const url = URL.createObjectURL(blob);
+                    link.setAttribute('href', url);
+                    link.setAttribute('download', `gastos_${currentFilter.toLowerCase()}_${new Date().toISOString().slice(0, 10)}.csv`);
+                    link.style.visibility = 'hidden';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                } else {
+                    await showModal('Seu navegador não suporta a exportação de arquivos CSV diretamente.');
+                }
+            });
+
+            clearEntriesBtn.addEventListener('click', async () => {
+                const isConfirmed = await showModal(`Tem certeza que deseja limpar todos os gastos da categoria "${currentFilter}"?`, true);
+                if (isConfirmed) {
+                    await clearExpensesInDb(currentFilter);
+                    await renderExpenses(currentFilter);
+                }
+            });
+        });
+    </script>
+</body>
+</html>
