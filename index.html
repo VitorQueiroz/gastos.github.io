@@ -45,11 +45,8 @@
             border-color: var(--highlight);
         }
         
-        .list-item-bg {
-            background-color: var(--bg-primary);
-        }
-        .dark .list-item-bg {
-            background-color: #1F2937;
+        input, select, textarea {
+            background-color: var(--card-bg);
         }
     </style>
 </head>
@@ -86,21 +83,21 @@
                     <!-- Data -->
                     <div>
                         <label for="date-input" class="block mb-1 text-sm font-medium">Data</label>
-                        <input type="date" id="date-input" class="w-full p-2 border-2 border-gray-300 rounded-lg focus:ring-highlight focus:border-highlight text-sm bg-gray-100 transition-colors duration-300 dark:bg-gray-700">
+                        <input type="date" id="date-input" class="w-full p-2 border-2 border-gray-300 rounded-lg focus:ring-highlight focus:border-highlight text-sm transition-colors duration-300">
                     </div>
 
                     <!-- Valor -->
                     <div>
                         <label for="value-input" class="block mb-1 text-sm font-medium">Valor</label>
                         <div class="relative">
-                            <input type="text" id="value-input" placeholder="R$ 0,00" class="w-full p-2 border-2 border-gray-300 rounded-lg focus:ring-highlight focus:border-highlight text-sm bg-gray-100 transition-colors duration-300 dark:bg-gray-700">
+                            <input type="text" id="value-input" placeholder="R$ 0,00" class="w-full p-2 border-2 border-gray-300 rounded-lg focus:ring-highlight focus:border-highlight text-sm transition-colors duration-300">
                         </div>
                     </div>
 
                     <!-- Forma de Pagamento -->
                     <div>
                         <label for="payment-method" class="block mb-1 text-sm font-medium">Forma de Pagamento</label>
-                        <select id="payment-method" class="w-full p-2 border-2 border-gray-300 rounded-lg focus:ring-highlight focus:border-highlight text-sm bg-gray-100 transition-colors duration-300 dark:bg-gray-700">
+                        <select id="payment-method" class="w-full p-2 border-2 border-gray-300 rounded-lg focus:ring-highlight focus:border-highlight text-sm transition-colors duration-300">
                             <option value="Credito">Crédito</option>
                             <option value="Debito" selected>Débito</option>
                             <option value="Dinheiro">Dinheiro</option>
@@ -110,7 +107,7 @@
                     <!-- Categoria -->
                     <div>
                         <label for="category" class="block mb-1 text-sm font-medium">Categoria</label>
-                        <select id="category" class="w-full p-2 border-2 border-gray-300 rounded-lg focus:ring-highlight focus:border-highlight text-sm bg-gray-100 transition-colors duration-300 dark:bg-gray-700">
+                        <select id="category" class="w-full p-2 border-2 border-gray-300 rounded-lg focus:ring-highlight focus:border-highlight text-sm transition-colors duration-300">
                             <option value="Produto">Produto</option>
                             <option value="Servico">Serviço</option>
                             <option value="Transferencia">Transferência</option>
@@ -121,7 +118,7 @@
                     <!-- Descrição -->
                     <div>
                         <label for="description-input" class="block mb-1 text-sm font-medium">Descrição Detalhada</label>
-                        <textarea id="description-input" rows="3" class="w-full p-2 border-2 border-gray-300 rounded-lg focus:ring-highlight focus:border-highlight text-sm bg-gray-100 transition-colors duration-300 dark:bg-gray-700"></textarea>
+                        <textarea id="description-input" rows="3" class="w-full p-2 border-2 border-gray-300 rounded-lg focus:ring-highlight focus:border-highlight text-sm transition-colors duration-300"></textarea>
                     </div>
 
                     <button type="submit" class="w-full py-3 bg-highlight text-white font-semibold rounded-lg shadow-md transition-transform duration-300 transform hover:scale-105">
@@ -140,7 +137,7 @@
                 </div>
 
                 <!-- Total -->
-                <div class="flex flex-col items-center bg-gray-200 dark:bg-gray-800 p-4 rounded-lg shadow-inner">
+                <div class="flex flex-col items-center p-4 rounded-lg">
                     <p class="text-sm font-medium">Total da Lista:</p>
                     <p id="total-display" class="text-3xl font-bold text-highlight mt-1">R$ 0,00</p>
                 </div>
@@ -432,7 +429,7 @@
                     total += numericValue;
 
                     const listItem = document.createElement('li');
-                    listItem.classList.add('list-item-bg', 'p-4', 'rounded-lg', 'shadow', 'flex', 'flex-col', 'gap-1');
+                    listItem.classList.add('p-4', 'rounded-lg', 'shadow', 'flex', 'flex-col', 'gap-1');
                     listItem.innerHTML = `
                         <div class="flex justify-between items-center">
                             <span class="text-sm font-semibold">${expense.date.split('-').reverse().join('/')}</span>
@@ -452,10 +449,10 @@
                 filterButtons.forEach(btn => {
                     if (btn.dataset.filter === filter) {
                         btn.classList.add('bg-highlight', 'text-white');
-                        btn.classList.remove('text-gray-500');
+                        btn.classList.remove('text-gray-500', 'hover:text-highlight');
                     } else {
                         btn.classList.remove('bg-highlight', 'text-white');
-                        btn.classList.add('text-gray-500');
+                        btn.classList.add('text-gray-500', 'hover:text-highlight');
                     }
                 });
             };
