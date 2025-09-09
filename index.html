@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-   <link rel="manifest" href="manifest.json">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Diário de Gastos</title>
@@ -454,16 +453,18 @@
                     return;
                 }
                 
-                let csvContent = "Data,Valor,Forma Pgto,Categoria,Descricao\n";
+                // Usando ponto e vírgula como delimitador
+                let csvContent = "Data;Valor;Forma Pgto;Categoria;Descricao\n";
                 expensesToExport.forEach(expense => {
-                    const formattedValue = new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2, useGrouping: false }).format(expense.value).replace('.', ',');
+                    // Formata o valor para ter 2 casas decimais, usa vírgula como separador decimal e o envolve com aspas
+                    const formattedValue = '"R$ ' + expense.value.toFixed(2).replace('.', ',') + '"';
                     const row = [
                         expense.date.split('-').reverse().join('/'),
                         formattedValue,
                         expense.paymentMethod,
                         expense.category,
                         `"${expense.description.replace(/"/g, '""')}"`
-                    ].join(','); 
+                    ].join(';'); 
                     csvContent += row + "\n";
                 });
 
