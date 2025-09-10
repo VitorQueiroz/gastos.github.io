@@ -1,0 +1,17 @@
+{
+  "name": "Gastos",
+  "short_name": "Gastos",
+  "description": "Um aplicativo simples para registrar seus gastos.",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#9370DB",
+  "icons": [
+    {
+      "src": "icone.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+
+  ]
+}
