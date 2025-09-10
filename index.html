@@ -1,11 +1,12 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-    <link rel="manifest" href="manifest.json">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Diário de Gastos</title>
+    <link rel="manifest" href="manifest.json">
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -137,6 +138,12 @@
                     <button data-filter="Dinheiro" class="flex-1 py-2 px-4 rounded-full text-sm font-semibold text-gray-500 hover:text-highlight transition-colors duration-300">Dinheiro</button>
                 </div>
 
+                <!-- Chart container -->
+                <div class="p-4 rounded-lg shadow">
+                    <h2 class="text-center font-bold mb-2">Visão Geral dos Gastos por Categoria</h2>
+                    <canvas id="expense-chart"></canvas>
+                </div>
+
                 <!-- Total -->
                 <div class="flex flex-col items-center p-4 rounded-lg">
                     <p class="text-sm font-medium">Total da Lista:</p>
@@ -150,8 +157,8 @@
 
                 <!-- Action buttons -->
                 <div class="flex gap-4 mt-4">
-                    <button id="export-csv" class="flex-1 py-3 bg-highlight text-white font-semibold rounded-lg shadow-md transition-transform duration-300 transform hover:scale-105">
-                        Exportar para CSV
+                    <button id="export-json" class="flex-1 py-3 bg-highlight text-white font-semibold rounded-lg shadow-md transition-transform duration-300 transform hover:scale-105">
+                        Exportar para JSON
                     </button>
                     <button id="clear-entries" class="flex-1 py-3 bg-highlight text-white font-semibold rounded-lg shadow-md transition-transform duration-300 transform hover:scale-105">
                         Limpar Entradas
@@ -200,7 +207,7 @@
             const filterButtons = document.querySelectorAll('#view-section button[data-filter]');
             const expenseList = document.getElementById('expense-list');
             const totalDisplay = document.getElementById('total-display');
-            const exportCsvBtn = document.getElementById('export-csv');
+            const exportJsonBtn = document.getElementById('export-json');
             const clearEntriesBtn = document.getElementById('clear-entries');
             
             // Modal elements
@@ -214,6 +221,7 @@
 
             let db;
             let currentFilter = 'Debito';
+            let expenseChart = null;
 
             // --- Lógica de Modo Escuro/Claro ---
             const setTheme = (theme) => {
@@ -319,7 +327,7 @@
             };
 
             // --- Função de formatação de moeda brasileira (R$ 0.000,00) ---
-            const formatCurrency = (value) => {
+            const formatCurrency = (value, includeSymbol = true) => {
                 if (typeof value === 'string') {
                     value = value.replace(/\D/g, '');
                 }
@@ -329,8 +337,12 @@
                     style: 'currency',
                     currency: 'BRL'
                 });
-                
-                return formatter.format(num);
+
+                if (includeSymbol) {
+                    return formatter.format(num);
+                } else {
+                    return num.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                }
             };
 
             // --- Funções de interação com o IndexedDB ---
@@ -415,12 +427,70 @@
             });
 
             // --- Funcionalidade 2: Meus Gastos ---
+            const renderChart = (expenses) => {
+                if (expenseChart) {
+                    expenseChart.destroy();
+                }
+
+                const categoryTotals = {};
+                expenses.forEach(expense => {
+                    categoryTotals[expense.category] = (categoryTotals[expense.category] || 0) + expense.value;
+                });
+                
+                const labels = Object.keys(categoryTotals);
+                const data = Object.values(categoryTotals);
+                
+                const colors = {
+                    'Produto': '#059669',
+                    'Servico': '#34D399',
+                    'Transferencia': '#6EE7B7',
+                    'Divida': '#A7F3D0'
+                };
+
+                const backgroundColors = labels.map(label => colors[label] || '#9CA3AF');
+
+                const ctx = document.getElementById('expense-chart').getContext('2d');
+                expenseChart = new Chart(ctx, {
+                    type: 'pie',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            data: data,
+                            backgroundColor: backgroundColors,
+                            hoverOffset: 4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: {
+                                position: 'top',
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        const label = context.label || '';
+                                        const value = context.parsed || 0;
+                                        const total = context.dataset.data.reduce((acc, curr) => acc + curr, 0);
+                                        const percentage = total > 0 ? ((value / total) * 100).toFixed(2) : 0;
+                                        return `${label}: ${formatCurrency(value * 100)} (${percentage}%)`;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            };
+
             const renderExpenses = async (filter) => {
                 expenseList.innerHTML = '';
                 let total = 0;
 
                 const expenses = await getExpensesFromDb(filter);
                 
+                // Renderiza o gráfico
+                renderChart(expenses);
+
                 if (expenses.length === 0) {
                     expenseList.innerHTML = `<li class="text-center text-gray-400 mt-8">Nenhum gasto encontrado para esta categoria.</li>`;
                 }
@@ -466,40 +536,46 @@
 
             await renderExpenses('Debito');
 
-            exportCsvBtn.addEventListener('click', async () => {
+            exportJsonBtn.addEventListener('click', async () => {
                 const expensesToExport = await getExpensesFromDb(currentFilter);
                 if (expensesToExport.length === 0) {
                     await showModal('Não há dados para exportar.');
                     return;
                 }
                 
-                // Usando ponto e vírgula como delimitador
-                let csvContent = "Data;Valor;Forma Pgto;Categoria;Descricao\n";
-                expensesToExport.forEach(expense => {
-                    // Formata o valor para ter 2 casas decimais, usa vírgula como separador decimal e o envolve com aspas
-                    const formattedValue = '"R$ ' + expense.value.toFixed(2).replace('.', ',') + '"';
-                    const row = [
-                        expense.date.split('-').reverse().join('/'),
-                        formattedValue,
-                        expense.paymentMethod,
-                        expense.category,
-                        `"${expense.description.replace(/"/g, '""')}"`
-                    ].join(';'); 
-                    csvContent += row + "\n";
+                // Formata o timestamp para o ID e nome do arquivo
+                const now = new Date();
+                const pad = (num) => String(num).padStart(2, '0');
+                const pad3 = (num) => String(num).padStart(3, '0');
+                const timestampId = `${pad(now.getDate())}${pad(now.getMonth() + 1)}${now.getFullYear()}_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}${pad3(now.getMilliseconds())}`;
+                const fileName = `gastos_${timestampId}.json`;
+
+                const exportData = expensesToExport.map(expense => {
+                    return {
+                        id: timestampId,
+                        data: expense.date.split('-').reverse().join('/'),
+                        valor: formatCurrency(expense.value * 100), // Mantém o espaço após o "R$"
+                        forma_pagamento: expense.paymentMethod,
+                        categoria: expense.category,
+                        descricao: expense.description
+                    };
                 });
 
-                const blob = new Blob([`\ufeff${csvContent}`], { type: 'text/csv;charset=utf-8;' });
+                const jsonContent = JSON.stringify(exportData, null, 2);
+                
+                const blob = new Blob([jsonContent], { type: 'application/json' });
                 const link = document.createElement('a');
                 if (link.download !== undefined) {
+                    
                     const url = URL.createObjectURL(blob);
                     link.setAttribute('href', url);
-                    link.setAttribute('download', `gastos_${currentFilter.toLowerCase()}_${new Date().toISOString().slice(0, 10)}.csv`);
+                    link.setAttribute('download', fileName);
                     link.style.visibility = 'hidden';
                     document.body.appendChild(link);
                     link.click();
                     document.body.removeChild(link);
                 } else {
-                    await showModal('Seu navegador não suporta a exportação de arquivos CSV diretamente.');
+                    await showModal('Seu navegador não suporta a exportação de arquivos JSON diretamente.');
                 }
             });
 
