@@ -550,16 +550,19 @@
                 const timestampId = `${pad(now.getDate())}${pad(now.getMonth() + 1)}${now.getFullYear()}_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}${pad3(now.getMilliseconds())}`;
                 const fileName = `gastos_${timestampId}.json`;
 
-                const exportData = expensesToExport.map(expense => {
-                    return {
-                        id: timestampId,
-                        data: expense.date.split('-').reverse().join('/'),
-                        valor: formatCurrency(expense.value * 100), // Mantém o espaço após o "R$"
-                        forma_pagamento: expense.paymentMethod,
-                        categoria: expense.category,
-                        descricao: expense.description
-                    };
-                });
+                // Constrói o objeto JSON final com o timestamp no início e a lista de entradas
+                const exportData = {
+                    timestamp: timestampId,
+                    entries: expensesToExport.map(expense => {
+                        return {
+                            DATA: expense.date.split('-').reverse().join('/'),
+                            VALOR: formatCurrency(expense.value * 100),
+                            'FORMA PGTO': expense.paymentMethod,
+                            CATEGORIA: expense.category,
+                            DESCRIÇÃO: expense.description
+                        };
+                    })
+                };
 
                 const jsonContent = JSON.stringify(exportData, null, 2);
                 
