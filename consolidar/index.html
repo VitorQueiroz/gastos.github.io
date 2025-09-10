@@ -1,1 +1,349 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <link rel="manifest" href="manifest.json">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Importador de Dados de Gastos</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #F0F4F8;
+            --text-primary: #1A202C;
+            --highlight: #059669;
+            --card-bg: #FFFFFF;
+        }
+        .dark {
+            --bg-primary: #1A1A1A;
+            --text-primary: #F0F0F0;
+            --highlight: #059669;
+            --card-bg: #1F2937;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        .container {
+            max-width: 400px;
+            margin: auto;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding: 1rem;
+            background-color: var(--card-bg);
+            transition: background-color 0.3s ease;
+        }
+        .text-highlight {
+            color: var(--highlight);
+        }
+        .bg-highlight {
+            background-color: var(--highlight);
+        }
+        .border-highlight {
+            border-color: var(--highlight);
+        }
+        .drop-area {
+            border: 2px dashed var(--highlight);
+            background-color: var(--bg-primary);
+        }
+    </style>
+</head>
+<body>
+    <div class="container rounded-2xl shadow-lg">
+        <!-- Header -->
+        <header class="flex justify-between items-center py-4 px-2">
+            <h1 class="text-xl font-bold text-highlight">Importar e Exportar CSV</h1>
+            <button id="theme-toggle" class="p-2 rounded-full border-2 border-highlight">
+                <svg id="moon-icon" class="w-6 h-6 text-highlight hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
+                </svg>
+                <svg id="sun-icon" class="w-6 h-6 text-highlight" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>
+                </svg>
+            </button>
+        </header>
 
+        <!-- Main Content -->
+        <main class="flex-1 flex flex-col gap-4">
+            <!-- Drop area -->
+            <div id="drop-area" class="drop-area p-8 rounded-lg text-center cursor-pointer transition-colors duration-300">
+                <p>Arraste e solte arquivos JSON aqui</p>
+                <p class="text-sm text-gray-500">ou</p>
+                <label for="file-input" class="cursor-pointer bg-highlight text-white py-2 px-4 rounded-lg font-semibold inline-block mt-2">
+                    Selecionar Arquivos
+                </label>
+                <input type="file" id="file-input" multiple accept=".json" class="hidden">
+            </div>
+
+            <!-- File list -->
+            <div id="file-list-container" class="mt-4 hidden">
+                <h2 class="text-lg font-bold mb-2">Arquivos Carregados:</h2>
+                <ul id="file-list" class="bg-bg-primary p-4 rounded-lg max-h-48 overflow-y-auto">
+                    <!-- File info will be added here -->
+                </ul>
+            </div>
+
+            <!-- Action buttons -->
+            <div id="action-buttons" class="mt-4 hidden">
+                <button id="export-csv" class="w-full py-3 bg-highlight text-white font-semibold rounded-lg shadow-md transition-transform duration-300 transform hover:scale-105">
+                    Exportar para CSV
+                </button>
+            </div>
+        </main>
+    </div>
+
+    <!-- Custom Modal -->
+    <div id="custom-modal" class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center hidden">
+        <div class="bg-card-bg p-6 rounded-lg shadow-lg max-w-sm w-full mx-4 flex flex-col items-center">
+            <p id="modal-message" class="text-lg text-center mb-4"></p>
+            <div id="modal-buttons" class="flex gap-4">
+                <button id="modal-ok-btn" class="py-2 px-4 bg-highlight text-white font-semibold rounded-lg">OK</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- Variáveis globais e elementos do DOM ---
+            const themeToggleBtn = document.getElementById('theme-toggle');
+            const sunIcon = document.getElementById('sun-icon');
+            const moonIcon = document.getElementById('moon-icon');
+            const body = document.body;
+            
+            const dropArea = document.getElementById('drop-area');
+            const fileInput = document.getElementById('file-input');
+            const fileListContainer = document.getElementById('file-list-container');
+            const fileList = document.getElementById('file-list');
+            const actionButtons = document.getElementById('action-buttons');
+            const exportCsvBtn = document.getElementById('export-csv');
+
+            // Modal elements
+            const customModal = document.getElementById('custom-modal');
+            const modalMessage = document.getElementById('modal-message');
+            const modalOkBtn = document.getElementById('modal-ok-btn');
+
+            let allExpenses = [];
+            let processedFileIds = new Set();
+            let allParsedData = [];
+
+            // --- Lógica de Modo Escuro/Claro ---
+            const setTheme = (theme) => {
+                if (theme === 'dark') {
+                    body.classList.add('dark');
+                    sunIcon.classList.add('hidden');
+                    moonIcon.classList.remove('hidden');
+                } else {
+                    body.classList.remove('dark');
+                    moonIcon.classList.add('hidden');
+                    sunIcon.classList.remove('hidden');
+                }
+                localStorage.setItem('theme', theme);
+            };
+
+            themeToggleBtn.addEventListener('click', () => {
+                const currentTheme = body.classList.contains('dark') ? 'light' : 'dark';
+                setTheme(currentTheme);
+            });
+
+            const initialTheme = localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+            setTheme(initialTheme);
+
+            // --- Funções do Modal Personalizado ---
+            const showModal = (message) => {
+                return new Promise(resolve => {
+                    modalMessage.textContent = message;
+                    customModal.classList.remove('hidden');
+
+                    modalOkBtn.onclick = () => {
+                        customModal.classList.add('hidden');
+                        resolve(true);
+                    };
+                });
+            };
+
+            // --- Função de formatação de moeda brasileira (R$ 0.000,00) ---
+            const formatCurrency = (value) => {
+                const formatter = new Intl.NumberFormat('pt-BR', {
+                    style: 'currency',
+                    currency: 'BRL'
+                });
+                return formatter.format(value);
+            };
+
+            // --- Lógica de drag-and-drop e seleção de arquivos ---
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                dropArea.addEventListener(eventName, preventDefaults, false);
+            });
+
+            function preventDefaults(e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropArea.addEventListener(eventName, highlight, false);
+            });
+
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropArea.addEventListener(eventName, unhighlight, false);
+            });
+
+            function highlight() {
+                dropArea.classList.add('bg-highlight', 'text-white');
+                dropArea.classList.remove('bg-bg-primary', 'text-primary');
+            }
+
+            function unhighlight() {
+                dropArea.classList.remove('bg-highlight', 'text-white');
+                dropArea.classList.add('bg-bg-primary', 'text-primary');
+            }
+            
+            dropArea.addEventListener('drop', handleDrop, false);
+            fileInput.addEventListener('change', handleFiles, false);
+
+            function handleDrop(e) {
+                let dt = e.dataTransfer;
+                let files = dt.files;
+                handleFiles({ target: { files: files } });
+            }
+
+            async function handleFiles(e) {
+                const files = e.target.files;
+                if (files.length === 0) return;
+
+                const filePromises = Array.from(files).map(file => readFileAsync(file));
+                const results = await Promise.all(filePromises);
+
+                const newFileIds = new Set();
+                let hasDuplicateIds = false;
+
+                // First pass: Check for duplicate IDs among newly uploaded files
+                for (const data of results) {
+                    if (data.status === 'success') {
+                        const fileId = data.content.timestamp;
+                        if (newFileIds.has(fileId)) {
+                            hasDuplicateIds = true;
+                            break;
+                        }
+                        newFileIds.add(fileId);
+                    }
+                }
+
+                if (hasDuplicateIds) {
+                    await showModal('Erro: Arquivos duplicados encontrados com o mesmo ID na seleção atual. Por favor, verifique os arquivos e tente novamente.');
+                    fileInput.value = ''; // Limpa a seleção do input
+                    return;
+                }
+
+                // Second pass: Process unique files
+                allParsedData = [];
+                processedFileIds = new Set();
+                fileList.innerHTML = '';
+
+                for (const data of results) {
+                    if (data.status === 'success') {
+                        const fileId = data.content.timestamp;
+                        if (!processedFileIds.has(fileId)) {
+                            allParsedData.push(data.content);
+                            processedFileIds.add(fileId);
+                        }
+                    } else {
+                        await showModal(`Erro ao ler o arquivo: ${data.name}. Certifique-se de que é um arquivo JSON válido.`);
+                        fileInput.value = '';
+                        return;
+                    }
+                }
+
+                // Render the file list
+                fileListContainer.classList.remove('hidden');
+                actionButtons.classList.remove('hidden');
+                allParsedData.forEach(data => {
+                    const listItem = document.createElement('li');
+                    listItem.classList.add('p-2', 'border-b', 'border-gray-200', 'dark:border-gray-700', 'last:border-b-0');
+                    listItem.innerHTML = `
+                        <div class="flex justify-between items-center text-sm">
+                            <span class="font-semibold text-highlight">ID: ${data.timestamp}</span>
+                            <span class="text-gray-500">${data.entries.length} entradas</span>
+                        </div>
+                    `;
+                    fileList.appendChild(listItem);
+                });
+
+                if (allParsedData.length === 0) {
+                    fileListContainer.classList.add('hidden');
+                    actionButtons.classList.add('hidden');
+                }
+            }
+
+            function readFileAsync(file) {
+                return new Promise(resolve => {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        try {
+                            const parsed = JSON.parse(e.target.result);
+                            if (parsed && parsed.timestamp && Array.isArray(parsed.entries)) {
+                                resolve({ status: 'success', content: parsed, name: file.name });
+                            } else {
+                                throw new Error('Formato JSON inválido.');
+                            }
+                        } catch (error) {
+                            resolve({ status: 'error', error: error, name: file.name });
+                        }
+                    };
+                    reader.readAsText(file);
+                });
+            }
+
+            // --- Funcionalidade 2: Exportação para CSV ---
+            exportCsvBtn.addEventListener('click', async () => {
+                if (allParsedData.length === 0) {
+                    await showModal('Nenhum arquivo JSON carregado para exportar.');
+                    return;
+                }
+
+                // Combine all entries from all files
+                let allEntries = [];
+                allParsedData.forEach(fileData => {
+                    allEntries = allEntries.concat(fileData.entries);
+                });
+
+                if (allEntries.length === 0) {
+                    await showModal('Os arquivos carregados não contêm entradas de gastos.');
+                    return;
+                }
+
+                // Generate CSV content
+                const csvHeader = ["Data", "Valor", "Forma Pgto", "Categoria", "Descrição"].join(";") + "\n";
+                const csvContent = allEntries.map(entry => {
+                    return `"${entry['DATA']}";"${entry['VALOR']}";"${entry['FORMA PGTO']}";"${entry['CATEGORIA']}";"${entry['DESCRIÇÃO']}"`;
+                }).join("\n");
+                
+                const fullCsv = csvHeader + csvContent;
+                const blob = new Blob([new Uint8Array([0xEF, 0xBB, 0xBF]), fullCsv], { type: 'text/csv;charset=utf-8;' });
+                
+                const now = new Date();
+                const pad = (num) => String(num).padStart(2, '0');
+                const pad3 = (num) => String(num).padStart(3, '0');
+                const timestampId = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}${pad3(now.getMilliseconds())}`;
+                const fileName = `gastos_consolidado_${timestampId}.csv`;
+                
+                const link = document.createElement("a");
+                if (link.download !== undefined) {
+                    const url = URL.createObjectURL(blob);
+                    link.setAttribute("href", url);
+                    link.setAttribute("download", fileName);
+                    link.style.visibility = 'hidden';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                } else {
+                    await showModal('Seu navegador não suporta a exportação de arquivos CSV diretamente.');
+                }
+            });
+        });
+    </script>
+</body>
+</html>
