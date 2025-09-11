@@ -35,6 +35,7 @@ O projeto foi desenvolvido inteiramente com tecnologias web front-end, garantind
 * **Tailwind CSS:** Framework de CSS para design e estilização responsiva.
 * **Chart.js:** Biblioteca JavaScript para a criação do gráfico de pizza.
 * **IndexedDB:** Armazenamento local de dados do navegador para persistir os registros de gastos.
+* **Google Gemini:** Construção total do código do projeto, sendo que esse que vos fala (Vitor) construiu apenas a lógica da aplicação e orientou a IA no processo.
 
 ---
 
