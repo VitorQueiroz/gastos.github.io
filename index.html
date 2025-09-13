@@ -50,6 +50,17 @@
         input, select, textarea {
             background-color: var(--card-bg);
         }
+        .edit-button {
+            background-color: #34D399;
+            color: white;
+            padding: 0.5rem;
+            border-radius: 9999px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s ease-in-out;
+        }
+        .edit-button:hover {
+            transform: scale(1.1);
+        }
     </style>
 </head>
 <body>
@@ -190,7 +201,7 @@
         </main>
     </div>
 
-    <!-- Custom Modal -->
+    <!-- Custom Modals -->
     <div id="custom-modal" class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center hidden">
         <div class="bg-card-bg p-6 rounded-lg shadow-lg max-w-sm w-full mx-4 flex flex-col items-center">
             <p id="modal-message" class="text-lg text-center mb-4"></p>
@@ -201,6 +212,49 @@
         </div>
     </div>
     
+    <!-- Edit Expense Modal -->
+    <div id="edit-modal" class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center hidden">
+        <div class="bg-card-bg p-6 rounded-lg shadow-lg max-w-sm w-full mx-4">
+            <h2 class="text-xl font-bold mb-4">Editar Gasto</h2>
+            <form id="edit-form" class="flex flex-col gap-4">
+                <input type="hidden" id="edit-expense-id">
+                <div>
+                    <label for="edit-date" class="block mb-1 text-sm font-medium">Data</label>
+                    <input type="date" id="edit-date" class="w-full p-2 border-2 border-gray-300 rounded-lg focus:ring-highlight focus:border-highlight text-sm transition-colors duration-300">
+                </div>
+                <div>
+                    <label for="edit-value" class="block mb-1 text-sm font-medium">Valor</label>
+                    <input type="text" id="edit-value" class="w-full p-2 border-2 border-gray-300 rounded-lg focus:ring-highlight focus:border-highlight text-sm transition-colors duration-300">
+                </div>
+                <div>
+                    <label for="edit-payment-method" class="block mb-1 text-sm font-medium">Forma de Pagamento</label>
+                    <select id="edit-payment-method" class="w-full p-2 border-2 border-gray-300 rounded-lg focus:ring-highlight focus:border-highlight text-sm transition-colors duration-300">
+                        <option value="Credito">Crédito</option>
+                        <option value="Debito">Débito</option>
+                        <option value="Dinheiro">Dinheiro</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="edit-category" class="block mb-1 text-sm font-medium">Categoria</label>
+                    <select id="edit-category" class="w-full p-2 border-2 border-gray-300 rounded-lg focus:ring-highlight focus:border-highlight text-sm transition-colors duration-300">
+                        <option value="Produto">Produto</option>
+                        <option value="Servico">Serviço</option>
+                        <option value="Transferencia">Transferência</option>
+                        <option value="Divida">Dívida</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="edit-description" class="block mb-1 text-sm font-medium">Descrição Detalhada</label>
+                    <textarea id="edit-description" rows="3" class="w-full p-2 border-2 border-gray-300 rounded-lg focus:ring-highlight focus:border-highlight text-sm transition-colors duration-300"></textarea>
+                </div>
+                <div class="flex justify-end gap-2 mt-4">
+                    <button type="button" id="edit-cancel-btn" class="py-2 px-4 bg-gray-300 dark:bg-gray-700 text-gray-800 dark:text-gray-200 font-semibold rounded-lg">Cancelar</button>
+                    <button type="submit" class="py-2 px-4 bg-highlight text-white font-semibold rounded-lg">Salvar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Temporary Message Popup -->
     <div id="temp-message" class="fixed top-4 right-4 bg-green-500 text-white p-3 rounded-lg shadow-lg transition-opacity duration-300 opacity-0 hidden">
         <p>Gasto registrado com sucesso!</p>
@@ -237,6 +291,17 @@
             const modalMessage = document.getElementById('modal-message');
             const modalOkBtn = document.getElementById('modal-ok-btn');
             const modalCancelBtn = document.getElementById('modal-cancel-btn');
+            
+            // Edit modal elements
+            const editModal = document.getElementById('edit-modal');
+            const editForm = document.getElementById('edit-form');
+            const editExpenseId = document.getElementById('edit-expense-id');
+            const editDateInput = document.getElementById('edit-date');
+            const editValueInput = document.getElementById('edit-value');
+            const editPaymentMethodSelect = document.getElementById('edit-payment-method');
+            const editCategorySelect = document.getElementById('edit-category');
+            const editDescriptionInput = document.getElementById('edit-description');
+            const editCancelBtn = document.getElementById('edit-cancel-btn');
 
             // Temporary message element
             const tempMessage = document.getElementById('temp-message');
@@ -373,6 +438,17 @@
                     const transaction = db.transaction(['expenses'], 'readwrite');
                     const objectStore = transaction.objectStore('expenses');
                     const request = objectStore.add(expense);
+
+                    request.onsuccess = () => resolve();
+                    request.onerror = (e) => reject(e.target.error);
+                });
+            };
+
+            const updateExpenseInDb = (expense) => {
+                return new Promise((resolve, reject) => {
+                    const transaction = db.transaction(['expenses'], 'readwrite');
+                    const objectStore = transaction.objectStore('expenses');
+                    const request = objectStore.put(expense);
 
                     request.onsuccess = () => resolve();
                     request.onerror = (e) => reject(e.target.error);
@@ -522,11 +598,19 @@
                     total += numericValue;
 
                     const listItem = document.createElement('li');
-                    listItem.classList.add('p-4', 'rounded-lg', 'shadow', 'flex', 'flex-col', 'gap-1');
+                    listItem.classList.add('p-4', 'rounded-lg', 'shadow', 'flex', 'flex-col', 'gap-1', 'expense-item');
+                    listItem.dataset.id = expense.id;
                     listItem.innerHTML = `
                         <div class="flex justify-between items-center">
-                            <span class="text-sm font-semibold">${expense.date.split('-').reverse().join('/')}</span>
-                            <span class="text-lg font-bold text-highlight">${formatCurrency(expense.value * 100)}</span>
+                            <div>
+                                <span class="text-sm font-semibold">${expense.date.split('-').reverse().join('/')}</span>
+                                <span class="text-lg font-bold text-highlight ml-2">${formatCurrency(expense.value * 100)}</span>
+                            </div>
+                            <button class="edit-button" data-id="${expense.id}" aria-label="Editar">
+                                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828zM2 13.5V18h4.5l9.5-9.5-4.5-4.5-9.5 9.5z" clip-rule="evenodd" fill-rule="evenodd"></path>
+                                </svg>
+                            </button>
                         </div>
                         <div class="flex justify-between items-center text-sm text-gray-500 dark:text-gray-400">
                             <span>Categoria: ${expense.category}</span>
@@ -555,6 +639,64 @@
                     renderExpenses(button.dataset.filter);
                 });
             });
+
+            // --- Funcionalidade de Edição ---
+            expenseList.addEventListener('click', async (e) => {
+                const editBtn = e.target.closest('.edit-button');
+                if (editBtn) {
+                    const expenseId = parseInt(editBtn.dataset.id);
+                    const transaction = db.transaction(['expenses'], 'readonly');
+                    const objectStore = transaction.objectStore('expenses');
+                    const request = objectStore.get(expenseId);
+                    
+                    request.onsuccess = () => {
+                        const expenseToEdit = request.result;
+                        if (expenseToEdit) {
+                            // Popula o modal de edição com os dados
+                            editExpenseId.value = expenseToEdit.id;
+                            editDateInput.value = expenseToEdit.date;
+                            editValueInput.value = formatCurrency(expenseToEdit.value * 100, false);
+                            editPaymentMethodSelect.value = expenseToEdit.paymentMethod;
+                            editCategorySelect.value = expenseToEdit.category;
+                            editDescriptionInput.value = expenseToEdit.description;
+                            
+                            // Mostra o modal de edição
+                            editModal.classList.remove('hidden');
+                        }
+                    };
+                }
+            });
+
+            editValueInput.addEventListener('input', (e) => {
+                let value = e.target.value.replace(/\D/g, '');
+                e.target.value = formatCurrency(value, false);
+            });
+
+            editForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+
+                const rawValue = editValueInput.value.replace(/\D/g, '');
+                if (!rawValue) return;
+
+                const updatedExpense = {
+                    id: parseInt(editExpenseId.value),
+                    date: editDateInput.value,
+                    value: parseFloat(rawValue) / 100,
+                    paymentMethod: editPaymentMethodSelect.value,
+                    category: editCategorySelect.value,
+                    description: editDescriptionInput.value
+                };
+
+                await updateExpenseInDb(updatedExpense);
+                editModal.classList.add('hidden');
+                showTemporaryMessage('Gasto atualizado com sucesso!');
+                await renderExpenses(currentFilter);
+            });
+
+            editCancelBtn.addEventListener('click', () => {
+                editModal.classList.add('hidden');
+            });
+
 
             await renderExpenses('Debito');
 
